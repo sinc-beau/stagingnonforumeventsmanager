@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
-import { Calendar, MapPin, Plus, Edit, Building2, Tag, ArrowUpDown, X, Search, Filter } from 'lucide-react';
+import { Calendar, MapPin, Plus, Edit, Building2, Tag, ArrowUpDown, X, Search, Filter, AlertCircle } from 'lucide-react';
+import { isEventExpired } from '../lib/dateUtils';
 
 type Event = Database['public']['Tables']['events']['Row'];
 
@@ -51,6 +52,9 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
   });
   const [availableTypes, setAvailableTypes] = useState<string[]>([]);
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
+  const [expiredLiveEvents, setExpiredLiveEvents] = useState<Event[]>([]);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -135,6 +139,11 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
       }
 
       setEvents(processedEvents);
+
+      const expired = processedEvents.filter(
+        (event: Event) => event.islive && isEventExpired(event.date)
+      );
+      setExpiredLiveEvents(expired);
     } catch (error) {
       console.error('Error fetching events:', error);
     } finally {
@@ -195,6 +204,28 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
     });
   }
 
+  async function handleBulkUncheckPastEvents() {
+    setBulkUpdating(true);
+    setShowBulkConfirm(false);
+
+    try {
+      const expiredIds = expiredLiveEvents.map(e => e.id);
+
+      for (const id of expiredIds) {
+        await supabase
+          .from('events')
+          .update({ islive: false, updated_at: new Date().toISOString() })
+          .eq('id', id);
+      }
+
+      await fetchEvents();
+    } catch (error) {
+      console.error('Error updating events:', error);
+    } finally {
+      setBulkUpdating(false);
+    }
+  }
+
   const hasActiveFilters = filters.islive !== 'all' || filters.type || filters.brand;
 
   if (loading) {
@@ -231,6 +262,26 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
         </div>
 
         <div className="bg-white rounded-xl shadow-md p-4 mb-6">
+          {expiredLiveEvents.length > 0 && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-red-700">
+                  <AlertCircle size={20} />
+                  <span className="font-semibold">
+                    {expiredLiveEvents.length} past event{expiredLiveEvents.length !== 1 ? 's' : ''} still marked as live
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowBulkConfirm(true)}
+                  disabled={bulkUpdating}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
+                >
+                  {bulkUpdating ? 'Updating...' : `Uncheck ${expiredLiveEvents.length} Past Event${expiredLiveEvents.length !== 1 ? 's' : ''}`}
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-3 mb-4 pb-4 border-b border-slate-200">
             <span className="text-sm font-semibold text-slate-700 flex items-center gap-2">
               <Filter size={16} />
@@ -352,10 +403,11 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {events.map((event) => {
               const { brandColor, typeColor } = getCardColors(event);
+              const isExpiredAndLive = event.islive && isEventExpired(event.date);
               return (
                 <div
                   key={event.id}
-                  className={`${brandColor.bg} ${brandColor.border} border-2 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer`}
+                  className={`${isExpiredAndLive ? 'bg-red-50 border-red-500' : `${brandColor.bg} ${brandColor.border}`} border-2 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer relative`}
                   onClick={() => onEditEvent(event)}
                 >
                   <div className="p-6 bg-white/60 backdrop-blur-sm">
@@ -373,6 +425,13 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
                         <Edit size={18} />
                       </button>
                     </div>
+
+                    {isExpiredAndLive && (
+                      <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-red-100 border border-red-300 rounded-lg">
+                        <AlertCircle size={16} className="text-red-600" />
+                        <span className="text-sm font-semibold text-red-700">Expired - Still Live</span>
+                      </div>
+                    )}
 
                     {event.blurb && (
                       <p className="text-slate-600 mb-4 line-clamp-2">{stripHtml(event.blurb)}</p>
@@ -412,6 +471,32 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
           </div>
         )}
       </div>
+
+      {showBulkConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-slate-900 mb-4">Uncheck Past Events?</h3>
+            <p className="text-slate-600 mb-6">
+              This will mark {expiredLiveEvents.length} past event{expiredLiveEvents.length !== 1 ? 's' : ''} as not live. This action will update all events that have passed their date but are still marked as live.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowBulkConfirm(false)}
+                className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkUncheckPastEvents}
+                disabled={bulkUpdating}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {bulkUpdating ? 'Updating...' : 'Uncheck All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

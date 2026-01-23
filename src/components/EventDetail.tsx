@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 import { syncEventToExternalDatabase } from '../lib/syncService';
-import { ArrowLeft, Trash2, Save, Plus, Download, Upload } from 'lucide-react';
+import { ArrowLeft, Trash2, Save, Plus, Download, Upload, AlertTriangle } from 'lucide-react';
 import { RichTextEditor } from './RichTextEditor';
+import { isEventExpired } from '../lib/dateUtils';
 
 type Event = Database['public']['Tables']['events']['Row'];
 type Speaker = Database['public']['Tables']['event_speakers']['Row'];
@@ -394,6 +395,27 @@ export function EventDetail({ event, onBack, onEventUpdated, onEventDeleted }: E
           </div>
 
           <form onSubmit={handleUpdate} className="p-8 space-y-6">
+            {islive && isEventExpired(event.date) && (
+              <div className="bg-orange-50 border-2 border-orange-400 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle size={24} className="text-orange-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-orange-900 mb-2">Past Event Still Marked as Live</h4>
+                    <p className="text-orange-800 mb-3">
+                      This event has passed its date but is still marked as live. Consider unchecking the "Event is Live" checkbox below.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIslive(false)}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium text-sm"
+                    >
+                      Uncheck "Event is Live"
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 {error}
