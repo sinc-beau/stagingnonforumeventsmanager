@@ -50,7 +50,7 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
     islive: 'all',
     type: '',
     brand: '',
-    date: 'all',
+    date: 'upcoming',
   });
   const [availableTypes, setAvailableTypes] = useState<string[]>([]);
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
