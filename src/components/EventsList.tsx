@@ -23,6 +23,7 @@ interface Filters {
   islive: 'all' | 'live' | 'not-live';
   type: string;
   brand: string;
+  date: 'all' | 'upcoming' | 'past';
 }
 
 const brandColors: Record<string, { bg: string; border: string; text: string }> = {
@@ -49,6 +50,7 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
     islive: 'all',
     type: '',
     brand: '',
+    date: 'all',
   });
   const [availableTypes, setAvailableTypes] = useState<string[]>([]);
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
@@ -115,6 +117,16 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
       processedEvents = Array.from(
         new Map(processedEvents.map((e: Event) => [e.id, e])).values()
       );
+
+      if (filters.date === 'past') {
+        processedEvents = processedEvents.filter((event: Event) =>
+          event.date && isEventExpired(event.date)
+        );
+      } else if (filters.date === 'upcoming') {
+        processedEvents = processedEvents.filter((event: Event) =>
+          event.date && !isEventExpired(event.date)
+        );
+      }
 
       if (sorts.some(s => s.field === 'sponsor')) {
         const sponsorSort = sorts.find(s => s.field === 'sponsor');
@@ -201,6 +213,7 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
       islive: 'all',
       type: '',
       brand: '',
+      date: 'all',
     });
   }
 
@@ -226,7 +239,7 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
     }
   }
 
-  const hasActiveFilters = filters.islive !== 'all' || filters.type || filters.brand;
+  const hasActiveFilters = filters.islive !== 'all' || filters.type || filters.brand || filters.date !== 'all';
 
   if (loading) {
     return (
@@ -295,6 +308,15 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
               <option value="all">All Events</option>
               <option value="live">Live Only</option>
               <option value="not-live">Not Live</option>
+            </select>
+            <select
+              value={filters.date}
+              onChange={(e) => setFilters({ ...filters, date: e.target.value as 'all' | 'upcoming' | 'past' })}
+              className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all bg-white"
+            >
+              <option value="all">All Dates</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="past">Past</option>
             </select>
             <select
               value={filters.brand}
