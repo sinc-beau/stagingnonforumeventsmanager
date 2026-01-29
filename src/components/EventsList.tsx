@@ -26,6 +26,9 @@ interface Filters {
   date: 'all' | 'upcoming' | 'past';
 }
 
+const BRANDS = ['ITx', 'Sentinel', 'CDAIO', 'Marketverse'];
+const EVENT_TYPES = ['Dinner', 'Elevated Experience', 'Forum', 'Learn & Go', 'VEB', 'Virtual Roundtable'];
+
 const brandColors: Record<string, { bg: string; border: string; text: string }> = {
   'ITx': { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
   'Sentinel': { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
@@ -53,29 +56,13 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
     brand: '',
     date: 'upcoming',
   });
-  const [availableTypes, setAvailableTypes] = useState<string[]>([]);
-  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
   const [expiredLiveEvents, setExpiredLiveEvents] = useState<Event[]>([]);
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
   useEffect(() => {
     fetchEvents();
-    fetchFilterOptions();
   }, [sorts, sponsorSearch, filters]);
-
-  async function fetchFilterOptions() {
-    const { data } = await supabase
-      .from('events')
-      .select('type, brand');
-
-    if (data) {
-      const types = [...new Set(data.map(e => e.type).filter(Boolean))];
-      const brands = [...new Set(data.map(e => e.brand).filter(Boolean))];
-      setAvailableTypes(types);
-      setAvailableBrands(brands);
-    }
-  }
 
   async function fetchEvents() {
     try {
@@ -325,7 +312,7 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
               className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all bg-white"
             >
               <option value="">All Brands</option>
-              {availableBrands.map(brand => (
+              {BRANDS.map(brand => (
                 <option key={brand} value={brand}>{brand}</option>
               ))}
             </select>
@@ -335,8 +322,8 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
               className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all bg-white"
             >
               <option value="">All Types</option>
-              {availableTypes.map(type => (
-                <option key={type} value={type} className="capitalize">{type}</option>
+              {EVENT_TYPES.map(type => (
+                <option key={type} value={type}>{type}</option>
               ))}
             </select>
             {hasActiveFilters && (
