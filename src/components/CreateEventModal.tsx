@@ -28,7 +28,7 @@ interface AgendaItem {
 }
 
 const BRANDS = ['ITx', 'Sentinel', 'CDAIO', 'Marketverse'];
-const EVENT_TYPES = ['Dinner', 'Elevated Experiences', 'Forum', 'Learn & Go', 'VEB', 'Virtual Roundtable'];
+const EVENT_TYPES = ['Dinner', 'Elevated Experience', 'Forum', 'Learn & Go', 'VEB', 'Virtual Roundtable'];
 
 export function CreateEventModal({ onClose, onEventCreated }: CreateEventModalProps) {
   const [title, setTitle] = useState('');

@@ -39,6 +39,7 @@ const typeColors: Record<string, { accent: string }> = {
   'virtual roundtable': { accent: 'from-cyan-500 to-cyan-600' },
   'learn and go': { accent: 'from-green-500 to-green-600' },
   'VEB': { accent: 'from-pink-500 to-pink-600' },
+  'elevated experience': { accent: 'from-blue-500 to-blue-600' },
 };
 
 export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
