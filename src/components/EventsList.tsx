@@ -187,7 +187,7 @@ export function EventsList({ onCreateEvent, onEditEvent }: EventsListProps) {
 
   function getCardColors(event: Event) {
     const brandColor = brandColors[event.brand] || { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700' };
-    const typeColor = typeColors[event.type] || { accent: 'from-slate-400 to-slate-500' };
+    const typeColor = typeColors[event.type?.toLowerCase()] || { accent: 'from-slate-400 to-slate-500' };
     return { brandColor, typeColor };
   }
 

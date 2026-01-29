@@ -19,7 +19,7 @@ interface EventDetailProps {
 }
 
 const BRANDS = ['ITx', 'Sentinel', 'CDAIO', 'Marketverse'];
-const EVENT_TYPES = ['Dinner', 'Forum', 'Learn & Go', 'VEB', 'Virtual Roundtable'];
+const EVENT_TYPES = ['Dinner', 'Elevated Experience', 'Forum', 'Learn & Go', 'VEB', 'Virtual Roundtable'];
 
 export function EventDetail({ event, onBack, onEventUpdated, onEventDeleted }: EventDetailProps) {
   const [title, setTitle] = useState(event.title);
